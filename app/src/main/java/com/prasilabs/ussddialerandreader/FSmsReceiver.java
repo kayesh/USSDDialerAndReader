@@ -20,15 +20,12 @@ import android.util.Log;
 
 /**
  * Broadcast receiver that listen to android SMS.
- * It uses {@link SmsMessageReceivedCallback} to send the received sms.
  *
  * @author Prasanna <praslnx8@gmail.com>
  * @version 1.0
  */
 public class FSmsReceiver extends BroadcastReceiver {
     private static final String TAG = FSmsReceiver.class.getSimpleName();
-
-    private SmsMessageReceivedCallback smsMessageReceivedCallback;
 
     /**
      * Default constructor
@@ -37,15 +34,6 @@ public class FSmsReceiver extends BroadcastReceiver {
         super();
     }
 
-    /**
-     * Constructor with callback for SMS brodcast receiver.
-     *
-     * @param smsMessageReceivedCallback Callback for communicating back.
-     */
-    public FSmsReceiver(SmsMessageReceivedCallback smsMessageReceivedCallback) {
-        super();
-        this.smsMessageReceivedCallback = smsMessageReceivedCallback;
-    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -61,26 +49,23 @@ public class FSmsReceiver extends BroadcastReceiver {
 
                 String message = currentMessage.getDisplayMessageBody();
 
-                if (smsMessageReceivedCallback != null) {
-                    smsMessageReceivedCallback.messageReceived(phoneNumber, message);
-                } else {
-                    if(message.contains(" ")) {
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                //TODO check for message contains...
+                if(message.contains(" ")) {
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
 
-                            final USSDManager ussdManager = new USSDManager();
-                            ussdManager.call(context, "*989#", new USSDManager.USSDCallback() {
-                                @Override
-                                public void response(String response) {
-                                    Log.d(TAG, "response is : " + response);
-                                    ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
-                                        @Override
-                                        public void response(String response) {
-                                            Log.d(TAG, "response is : " + response);
-                                        }
-                                    });
-                                }
-                            });
-                        }
+                        final USSDManager ussdManager = new USSDManager();
+                        ussdManager.call(context, "*989#", new USSDManager.USSDCallback() {
+                            @Override
+                            public void response(String response) {
+                                Log.d(TAG, "response is : " + response);
+                                ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
+                                    @Override
+                                    public void response(String response) {
+                                        Log.d(TAG, "response is : " + response);
+                                    }
+                                });
+                            }
+                        });
                     }
                 }
             }
@@ -97,19 +82,5 @@ public class FSmsReceiver extends BroadcastReceiver {
         }
 
         return currentSMS;
-    }
-
-    /**
-     * Callback interface for {@link FSmsReceiver} to communicate.
-     */
-    public interface SmsMessageReceivedCallback {
-
-        /**
-         * Method to send the OTP message.
-         *
-         * @param from    Sender address.
-         * @param message OTP message.
-         */
-        void messageReceived(String from, String message);
     }
 }
