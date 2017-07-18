@@ -18,7 +18,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.List;
 
 /**
- * Accesibility service that will receive accesibility prompt message.
+ * Accessibility service that will receive accesibility prompt message.
  *
  * @author Prasanna Anbazhagan <praslnx8@gmail.com>
  * @version 1.0
@@ -39,10 +39,11 @@ public class FAccesibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
-        Log.d(TAG, "accesibility received");
-
         String text = accessibilityEvent.getText().toString();
 
+        /**
+         * Check for valid accesibility dialog.
+         */
         if (accessibilityEvent.getClassName().equals("android.app.AlertDialog")) {
             if (text.contains("send") || text.contains("SEND") || text.contains("OK") || text.contains("ok")
                     || text.contains("CANCEL") || text.contains("cancel")) {
@@ -55,16 +56,6 @@ public class FAccesibilityService extends AccessibilityService {
         }
     }
 
-    public void pressButton(String name) {
-        AccessibilityNodeInfo source = accessibilityEvent.getSource();
-
-        if(source != null) {
-            List<AccessibilityNodeInfo> list = source.findAccessibilityNodeInfosByText(name);
-            for (AccessibilityNodeInfo node : list) {
-                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            }
-        }
-    }
 
     public static void closeDialog() {
         if(self != null) {

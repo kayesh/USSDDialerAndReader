@@ -39,12 +39,6 @@ import android.widget.TextView;
  */
 public class HomeActivity extends AppCompatActivity {
 
-    private static final String DIAL_NO = "*929#";
-
-    private static final String DIAL_NO2 = "1";
-
-    private static final String TAG = HomeActivity.class.getSimpleName();
-
     private Button dialButton;
 
     private TextView responseMessageTextView;
@@ -63,7 +57,7 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (ActivityCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                    dial(DIAL_NO);
+                    dial();
                 } else {
                     ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.CALL_PHONE}, 21);
                 }
@@ -80,6 +74,37 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    private void dial() {
+        final USSDManager ussdManager = new USSDManager();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+
+            ussdManager.call(this, "*989#", new USSDManager.USSDCallback() {
+                @Override
+                public void response(String response) {
+                    responseMessageTextView.setText(response);
+                    ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
+                        @Override
+                        public void response(String response) {
+                            responseMessageTextView.setText(responseMessageTextView.getText() + response);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 21 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            dial();
+        }
+    }
+    private void openAccesibilitySetting() {
+        Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+        startActivity(intent);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -91,53 +116,19 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private void dial(String no) {
-        final USSDManager ussdManager = new USSDManager(this);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager
-                .PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        ussdManager.call(this, "*121#", new USSDManager.USSDCallback() {
-            @Override
-            public void response(String response) {
-                responseMessageTextView.setText(response);
-                ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
-                    @Override
-                    public void response(String response) {
-                        responseMessageTextView.setText(responseMessageTextView.getText() + response);
-                    }
-                });
-            }
-        });
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 21 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            dial(DIAL_NO);
-        }
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         FAccesibilityService.stopItSelf();
     }
 
-    private void openAccesibilitySetting() {
-        Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
-        startActivity(intent);
-    }
 
-    // To check if service is enabled
+    /**
+     * Check for accesibility is enabled for this app.
+     *
+     * @param mContext Context to access android components.
+     * @return True if has access.
+     */
     private boolean isAccessibilitySettingsOn(Context mContext) {
         int accessibilityEnabled = 0;
         final String service = getPackageName() + "/" + FAccesibilityService.class.getCanonicalName();
@@ -145,15 +136,12 @@ public class HomeActivity extends AppCompatActivity {
             accessibilityEnabled = Settings.Secure.getInt(
                     mContext.getApplicationContext().getContentResolver(),
                     android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
-            Log.v(TAG, "accessibilityEnabled = " + accessibilityEnabled);
         } catch (Settings.SettingNotFoundException e) {
-            Log.e(TAG, "Error finding setting, default accessibility to not found: "
-                    + e.getMessage());
+
         }
         TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
 
         if (accessibilityEnabled == 1) {
-            Log.v(TAG, "***ACCESSIBILITY IS ENABLED*** -----------------");
             String settingValue = Settings.Secure.getString(
                     mContext.getApplicationContext().getContentResolver(),
                     Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
@@ -162,15 +150,12 @@ public class HomeActivity extends AppCompatActivity {
                 while (mStringColonSplitter.hasNext()) {
                     String accessibilityService = mStringColonSplitter.next();
 
-                    Log.v(TAG, "-------------- > accessibilityService :: " + accessibilityService + " " + service);
                     if (accessibilityService.equalsIgnoreCase(service)) {
-                        Log.v(TAG, "We've found the correct setting - accessibility is switched on!");
                         return true;
                     }
                 }
             }
         } else {
-            Log.v(TAG, "***ACCESSIBILITY IS DISABLED***");
         }
 
         return false;
