@@ -9,11 +9,8 @@ package com.prasilabs.ussddialerandreader;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.util.List;
 
@@ -95,6 +92,9 @@ public class FAccesibilityService extends AccessibilityService {
         setServiceInfo(info);
     }
 
+    /**
+     * Stop the service.
+     */
     public static void stopItSelf() {
         try{
             if(self != null) {

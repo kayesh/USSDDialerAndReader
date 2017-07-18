@@ -39,6 +39,10 @@ import android.widget.TextView;
  */
 public class HomeActivity extends AppCompatActivity {
 
+    private static final int PERMISSION_CALL = 21;
+    private static final int PERMISSION_SMS = 22;
+    private static final String TAG = HomeActivity.class.getSimpleName();
+
     private Button dialButton;
 
     private TextView responseMessageTextView;
@@ -59,7 +63,7 @@ public class HomeActivity extends AppCompatActivity {
                 if (ActivityCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
                     dial();
                 } else {
-                    ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.CALL_PHONE}, 21);
+                    ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.CALL_PHONE}, PERMISSION_CALL);
                 }
             }
         });
@@ -72,6 +76,10 @@ public class HomeActivity extends AppCompatActivity {
         } else {
             openAccesibilitySetting();
         }
+
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, PERMISSION_SMS);
+        }
     }
 
     private void dial() {
@@ -81,6 +89,7 @@ public class HomeActivity extends AppCompatActivity {
             ussdManager.call(this, "*989#", new USSDManager.USSDCallback() {
                 @Override
                 public void response(String response) {
+                    Log.d(TAG, "response is : " + response);
                     responseMessageTextView.setText(response);
                     ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
                         @Override
@@ -96,7 +105,7 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 21 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == PERMISSION_CALL && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             dial();
         }
     }
@@ -119,7 +128,6 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        FAccesibilityService.stopItSelf();
     }
 
 
