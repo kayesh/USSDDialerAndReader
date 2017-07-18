@@ -20,6 +20,8 @@ public class FAccesibilityService extends AccessibilityService {
 
     public static FAccesibilityService self;
 
+    private boolean isReplied = false;
+
     /*@Override
     public void onCreate() {
         super.onCreate();
@@ -35,7 +37,7 @@ public class FAccesibilityService extends AccessibilityService {
         if (source != null) {
             //capture the EditText simply by using FOCUS_INPUT (since the EditText has the focus), you can probably find it with the viewId input_field
             AccessibilityNodeInfo inputNode = source.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-            if (inputNode != null) {//prepare you text then fill it using ACTION_SET_TEXT
+            if (inputNode != null && !isReplied) {//prepare you text then fill it using ACTION_SET_TEXT
                 Bundle arguments = new Bundle();
                 arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,"1");
                 inputNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments);
@@ -50,6 +52,7 @@ public class FAccesibilityService extends AccessibilityService {
                 bundle.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,"1");
                 nodeInput.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,bundle);
                 nodeInput.refresh();
+                isReplied = true;
             } else {
                 inputNode = source.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY);
 
@@ -66,6 +69,8 @@ public class FAccesibilityService extends AccessibilityService {
                     bundle.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,"1");
                     nodeInput.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,bundle);
                     nodeInput.refresh();
+                } else {
+                    
                 }
             }
             //"Click" the Send button
