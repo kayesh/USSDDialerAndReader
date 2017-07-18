@@ -1,0 +1,10 @@
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackSpoken"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accesibility_rercord_message"
+    android:notificationTimeout="100"
+    android:packageNames="com.prasilabs.ussddialerandreader" />
+
