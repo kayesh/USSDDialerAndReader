@@ -1,3 +1,9 @@
+/*
+ * @category USSD.
+ * @copyright Copyright (C) 2017 Prasilabs. All rights reserved.
+ * @license http://www.apache.org/licenses/LICENSE-2.0
+ */
+
 package com.prasilabs.ussddialerandreader;
 
 import android.Manifest;
@@ -25,15 +31,22 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+/**
+ * Accesibility service that will receive accesibility prompt message.
+ *
+ * @author Prasanna Anbazhagan <praslnx8@gmail.com>
+ * @version 1.0
+ */
 public class HomeActivity extends AppCompatActivity {
 
     private static final String DIAL_NO = "*929#";
+
     private static final String DIAL_NO2 = "1";
+
     private static final String TAG = HomeActivity.class.getSimpleName();
 
-    private AccesibilityReceiver accesibilityReceiver;
-
     private Button dialButton;
+
     private TextView responseMessageTextView;
 
     private boolean isStarted = false;
@@ -43,15 +56,8 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        accesibilityReceiver = new AccesibilityReceiver();
-
         dialButton = (Button) findViewById(R.id.btn_dial);
         responseMessageTextView = (TextView) findViewById(R.id.response_text);
-
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction("FACC");
-
-        registerReceiver(accesibilityReceiver, intentFilter);
 
         dialButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -64,8 +70,8 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        if(isAccessibilitySettingsOn(this)) {
-            if(!isStarted) {
+        if (isAccessibilitySettingsOn(this)) {
+            if (!isStarted) {
                 isStarted = true;
                 startService(new Intent(this, FAccesibilityService.class));
             }
@@ -77,8 +83,8 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if(isAccessibilitySettingsOn(this)) {
-            if(!isStarted) {
+        if (isAccessibilitySettingsOn(this)) {
+            if (!isStarted) {
                 isStarted = true;
                 startService(new Intent(this, FAccesibilityService.class));
             }
@@ -86,13 +92,29 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void dial(String no) {
-        try {
-            Log.d(TAG, "dialing : " + no);
-            Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + Uri.encode(no)));
-            startActivity(intent);
-        }catch (SecurityException e) {
-
+        final USSDManager ussdManager = new USSDManager(this);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager
+                .PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
         }
+        ussdManager.call(1, this, "*121#", new USSDManager.USSDCallback() {
+            @Override
+            public void response(String response, int id) {
+                ussdManager.reply(2, "1", "Send", new USSDManager.USSDCallback() {
+                    @Override
+                    public void response(String response, int id) {
+                        responseMessageTextView.setText(response);
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -107,26 +129,11 @@ public class HomeActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         FAccesibilityService.stopItSelf();
-        unregisterReceiver(accesibilityReceiver);
     }
 
     private void openAccesibilitySetting() {
         Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
         startActivity(intent);
-    }
-
-    private class AccesibilityReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String text = intent.getStringExtra("TEXT");
-
-            if(!TextUtils.isEmpty(text)) {
-                responseMessageTextView.setText(text);
-            }
-
-            FAccesibilityService.closeDialog();
-        }
     }
 
     // To check if service is enabled
