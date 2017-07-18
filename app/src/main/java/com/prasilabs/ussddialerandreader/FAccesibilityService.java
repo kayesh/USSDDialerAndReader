@@ -48,9 +48,9 @@ public class FAccesibilityService extends AccessibilityService {
                     || text.contains("CANCEL") || text.contains("cancel")) {
                 this.accessibilityEvent = accessibilityEvent;
 
-                Intent intent = new Intent();
-                intent.setAction(USSDManager.ACTION);
-                //sendBroadcast(intent);
+                if(USSDManager.accesibilityCallBack != null) {
+                    USSDManager.accesibilityCallBack.received(accessibilityEvent);
+                }
             }
         }
     }
@@ -112,5 +112,10 @@ public class FAccesibilityService extends AccessibilityService {
         }catch (Exception e){
 
         }
+    }
+
+    public interface FAccesibilityCallBack {
+
+        void received(AccessibilityEvent accessibilityEvent);
     }
 }

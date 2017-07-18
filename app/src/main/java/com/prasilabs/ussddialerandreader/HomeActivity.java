@@ -104,15 +104,16 @@ public class HomeActivity extends AppCompatActivity {
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        ussdManager.call(1, this, "*121#", new USSDManager.USSDCallback() {
+        ussdManager.call(this, "*121#", new USSDManager.USSDCallback() {
             @Override
-            public void response(String response, int id) {
-               ussdManager.pressButton(2, "Cancel", new USSDManager.USSDCallback() {
-                   @Override
-                   public void response(String response, int id) {
-
-                   }
-               });
+            public void response(String response) {
+                responseMessageTextView.setText(response);
+                ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
+                    @Override
+                    public void response(String response) {
+                        responseMessageTextView.setText(responseMessageTextView.getText() + response);
+                    }
+                });
             }
         });
     }

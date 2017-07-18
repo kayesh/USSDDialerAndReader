@@ -29,27 +29,20 @@ import java.util.List;
  * @author Prasanna Anbazhagan <praslnx8@gmail.com>
  * @version 1.0
  */
-public class USSDManager {
+public class USSDManager implements FAccesibilityService.FAccesibilityCallBack {
 
     private USSDCallback ussdCallback;
-    private FAccReceiver fAccReceiver;
-    public static final String ACTION = "facc_action";
-    public static final String MESSAGE = "facc_message";
-    private int currentId;
+
+    public static FAccesibilityService.FAccesibilityCallBack accesibilityCallBack;
 
     private AccessibilityEvent currentAccesiblityEvent;
 
     public USSDManager(Context context) {
-
-        fAccReceiver = new FAccReceiver();
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION);
-        context.registerReceiver(fAccReceiver, intentFilter);
+        accesibilityCallBack = this;
     }
 
     @RequiresPermission(allOf = Manifest.permission.CALL_PHONE)
-    public void call(int id, Context context, String ussd, USSDCallback ussdCallback) {
-        this.currentId = id;
+    public void call(Context context, String ussd, USSDCallback ussdCallback) {
         this.ussdCallback = ussdCallback;
         if(ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
             Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + Uri.encode(ussd)));
@@ -57,8 +50,7 @@ public class USSDManager {
         }
     }
 
-    public void reply(int id, String reply, String buttonName, USSDCallback ussdCallback) {
-        this.currentId = id;
+    public void reply(String reply, String buttonName, USSDCallback ussdCallback) {
         this.ussdCallback = ussdCallback;
 
         AccessibilityNodeInfo source = currentAccesiblityEvent.getSource();
@@ -78,35 +70,25 @@ public class USSDManager {
         }
     }
 
-    public void pressButton(int id, String name, USSDCallback ussdCallback) {
-        this.currentId = id;
+    public void pressButton(String name, USSDCallback ussdCallback) {
         this.ussdCallback = ussdCallback;
 
         FAccesibilityService.self.pressButton(name);
     }
 
-    public interface USSDCallback {
-        void response(String response, int id);
+    @Override
+    public void received(AccessibilityEvent accessibilityEvent) {
+        if(ussdCallback != null) {
+            currentAccesiblityEvent = accessibilityEvent;
+            if(currentAccesiblityEvent != null) {
+                String text = currentAccesiblityEvent.getText().toString();
+
+                ussdCallback.response(text);
+            }
+        }
     }
 
-    private class FAccReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if(ussdCallback != null) {
-                        currentAccesiblityEvent = FAccesibilityService.self.accessibilityEvent;
-                        if(currentAccesiblityEvent != null) {
-                            String text = currentAccesiblityEvent.getText().toString();
-
-                            ussdCallback.response(text, currentId);
-                        }
-                    }
-                }
-            },1000);
-        }
+    public interface USSDCallback {
+        void response(String response);
     }
 }
