@@ -107,12 +107,12 @@ public class HomeActivity extends AppCompatActivity {
         ussdManager.call(1, this, "*121#", new USSDManager.USSDCallback() {
             @Override
             public void response(String response, int id) {
-                ussdManager.reply(2, "1", "Send", new USSDManager.USSDCallback() {
-                    @Override
-                    public void response(String response, int id) {
-                        responseMessageTextView.setText(response);
-                    }
-                });
+               ussdManager.pressButton(2, "Cancel", new USSDManager.USSDCallback() {
+                   @Override
+                   public void response(String response, int id) {
+
+                   }
+               });
             }
         });
     }

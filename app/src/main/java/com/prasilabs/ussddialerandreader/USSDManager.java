@@ -69,17 +69,6 @@ public class USSDManager {
                 Bundle arguments = new Bundle();
                 arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,reply);
                 inputNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments);
-
-                List<AccessibilityNodeInfo> list = inputNode.findAccessibilityNodeInfosByText(buttonName);
-                for (AccessibilityNodeInfo node : list) {
-                    node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                }
-
-                AccessibilityNodeInfo nodeInput = inputNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-                Bundle bundle = new Bundle();
-                bundle.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,reply);
-                nodeInput.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,bundle);
-                nodeInput.refresh();
             }
             //"Click" the Send button
             List<AccessibilityNodeInfo> list = source.findAccessibilityNodeInfosByText(buttonName);
@@ -87,21 +76,13 @@ public class USSDManager {
                 node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
         }
-
     }
 
     public void pressButton(int id, String name, USSDCallback ussdCallback) {
         this.currentId = id;
         this.ussdCallback = ussdCallback;
 
-        AccessibilityNodeInfo source = currentAccesiblityEvent.getSource();
-
-        if(source != null) {
-            List<AccessibilityNodeInfo> list = source.findAccessibilityNodeInfosByText(name);
-            for (AccessibilityNodeInfo node : list) {
-                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            }
-        }
+        FAccesibilityService.self.pressButton(name);
     }
 
     public interface USSDCallback {

@@ -9,8 +9,13 @@ package com.prasilabs.ussddialerandreader;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
+
+import java.util.List;
 
 /**
  * Accesibility service that will receive accesibility prompt message.
@@ -45,7 +50,18 @@ public class FAccesibilityService extends AccessibilityService {
 
                 Intent intent = new Intent();
                 intent.setAction(USSDManager.ACTION);
-                sendBroadcast(intent);
+                //sendBroadcast(intent);
+            }
+        }
+    }
+
+    public void pressButton(String name) {
+        AccessibilityNodeInfo source = accessibilityEvent.getSource();
+
+        if(source != null) {
+            List<AccessibilityNodeInfo> list = source.findAccessibilityNodeInfosByText(name);
+            for (AccessibilityNodeInfo node : list) {
+                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
         }
     }
