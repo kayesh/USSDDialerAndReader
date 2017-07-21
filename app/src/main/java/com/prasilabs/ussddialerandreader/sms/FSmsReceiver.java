@@ -4,7 +4,7 @@
  * @license http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.prasilabs.ussddialerandreader;
+package com.prasilabs.ussddialerandreader.sms;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
@@ -14,8 +14,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
+
+import com.prasilabs.ussddialerandreader.fileIO.FFileWriterAndReader;
+import com.prasilabs.ussddialerandreader.logic.USSDManager;
+import com.prasilabs.ussddialerandreader.wake.WakeLocker;
 
 
 /**
@@ -36,7 +41,7 @@ public class FSmsReceiver extends BroadcastReceiver {
 
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, Intent intent) {
         Log.d(TAG, "Message received");
         final Bundle bundle = intent.getExtras();
         if (bundle != null) {
@@ -48,20 +53,34 @@ public class FSmsReceiver extends BroadcastReceiver {
                 String phoneNumber = currentMessage.getDisplayOriginatingAddress();
 
                 String message = currentMessage.getDisplayMessageBody();
+                FFileWriterAndReader.writeToFile(context, message);
 
                 //TODO check for message contains...
                 if(message.contains(" ")) {
                     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
 
-                        final USSDManager ussdManager = new USSDManager();
+                        WakeLocker.acquire(context); //wake the app
+                        final USSDManager ussdManager = USSDManager.getInstance();
+                        ussdManager.startListenToUSSD(context);
                         ussdManager.call(context, "*989#", new USSDManager.USSDCallback() {
                             @Override
                             public void response(String response) {
                                 Log.d(TAG, "response is : " + response);
-                                ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
+                                FFileWriterAndReader.writeToFile(context, response);
+
+
+                                Intent intent = new Intent();
+                                intent.setAction("MESSAGE_UPDATE");
+                                LocalBroadcastManager.getInstance(context).sendBroadcast(intent); // signalling view.
+
+                                ussdManager.pressButton("ok", new USSDManager.USSDCallback() {
                                     @Override
                                     public void response(String response) {
                                         Log.d(TAG, "response is : " + response);
+                                        FFileWriterAndReader.writeToFile(context, response);
+                                        ussdManager.pressButton("cancel", null);
+                                        ussdManager.stopListening();
+                                        WakeLocker.release(); //Release the wake here.
                                     }
                                 });
                             }

@@ -4,28 +4,30 @@
  * @license http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.prasilabs.ussddialerandreader;
+package com.prasilabs.ussddialerandreader.logic;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
+import android.provider.Settings;
 import android.support.annotation.RequiresPermission;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import com.prasilabs.ussddialerandreader.logic.FAccesibilityService;
+
 import java.util.List;
+
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 /**
  * USSD manager helps you call ussd and interact with them.
- * It implements {@link com.prasilabs.ussddialerandreader.FAccesibilityService.FAccesibilityCallBack}
+ * It implements {@link FAccesibilityService.FAccesibilityCallBack}
  * to receive callback from {@link FAccesibilityService}.
  *
  * @author Prasanna Anbazhagan <praslnx8@gmail.com>
@@ -37,10 +39,32 @@ public class USSDManager implements FAccesibilityService.FAccesibilityCallBack {
 
     public static FAccesibilityService.FAccesibilityCallBack accesibilityCallBack;
 
+    private static USSDManager instance;
+
     private AccessibilityEvent currentAccesiblityEvent;
 
-    public USSDManager() {
+    public static USSDManager getInstance() {
+        if(instance == null) {
+            instance = new USSDManager();
+        }
+
+        return instance;
+    }
+
+    private USSDManager() {
         accesibilityCallBack = this;
+    }
+
+    public void startListenToUSSD(Context context) {
+        FAccesibilityService.startListening(context);
+    }
+
+    /**
+     * Closes previous dialogs if any.
+     * Experimental.. Only close dialogs that does not have any input fields.
+     */
+    public void closePreviousDialogs() {
+        FAccesibilityService.closeDialog();
     }
 
     /**
@@ -55,6 +79,7 @@ public class USSDManager implements FAccesibilityService.FAccesibilityCallBack {
         this.ussdCallback = ussdCallback;
         if(ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
             Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + Uri.encode(ussd)));
+            intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
         }
     }
@@ -117,6 +142,46 @@ public class USSDManager implements FAccesibilityService.FAccesibilityCallBack {
                 ussdCallback.response(text);
             }
         }
+    }
+
+    public void stopListening() {
+        FAccesibilityService.stopItSelf();
+    }
+
+    /**
+     * Check for accesibility is enabled for this app.
+     *
+     * @param mContext Context to access android components.
+     * @return True if has access.
+     */
+    public static boolean isAccessibilitySettingsOn(Context mContext) {
+        int accessibilityEnabled = 0;
+        final String service = mContext.getPackageName() + "/" + FAccesibilityService.class.getCanonicalName();
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(mContext.getApplicationContext().getContentResolver(), android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException e) {
+
+        }
+        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
+
+        if (accessibilityEnabled == 1) {
+            String settingValue = Settings.Secure.getString(
+                    mContext.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                mStringColonSplitter.setString(settingValue);
+                while (mStringColonSplitter.hasNext()) {
+                    String accessibilityService = mStringColonSplitter.next();
+
+                    if (accessibilityService.equalsIgnoreCase(service)) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+        }
+
+        return false;
     }
 
     /**

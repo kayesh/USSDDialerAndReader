@@ -4,15 +4,14 @@
  * @license http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.prasilabs.ussddialerandreader;
+package com.prasilabs.ussddialerandreader.logic;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
-
-import java.util.List;
 
 /**
  * Accessibility service that will receive accesibility prompt message.
@@ -27,6 +26,12 @@ public class FAccesibilityService extends AccessibilityService {
     public static FAccesibilityService self;
 
     public AccessibilityEvent accessibilityEvent;
+
+    static void startListening(Context context) {
+        if(self == null) {
+            context.startService(new Intent(context, FAccesibilityService.class));
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -54,13 +59,13 @@ public class FAccesibilityService extends AccessibilityService {
     }
 
 
-    public static void closeDialog() {
+    static void closeDialog() {
         if(self != null) {
             self.closeDialogs();
         }
     }
 
-    public void closeDialogs() {
+    private void closeDialogs() {
         performGlobalAction(GLOBAL_ACTION_BACK);
         sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
     }
@@ -95,7 +100,7 @@ public class FAccesibilityService extends AccessibilityService {
     /**
      * Stop the service.
      */
-    public static void stopItSelf() {
+    static void stopItSelf() {
         try{
             if(self != null) {
                 self.stopSelf();
@@ -105,7 +110,7 @@ public class FAccesibilityService extends AccessibilityService {
         }
     }
 
-    public interface FAccesibilityCallBack {
+    interface FAccesibilityCallBack {
 
         void received(AccessibilityEvent accessibilityEvent);
     }

@@ -7,29 +7,26 @@
 package com.prasilabs.ussddialerandreader;
 
 import android.Manifest;
-import android.app.ActivityManager;
-import android.app.ActivityOptions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Handler;
-import android.preference.PreferenceActivity;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.prasilabs.ussddialerandreader.fileIO.FFileWriterAndReader;
+import com.prasilabs.ussddialerandreader.logic.FAccesibilityService;
+import com.prasilabs.ussddialerandreader.logic.USSDManager;
 
 /**
  * Accesibility service that will receive accesibility prompt message.
@@ -43,8 +40,6 @@ public class HomeActivity extends AppCompatActivity {
     private static final int PERMISSION_SMS = 22;
     private static final String TAG = HomeActivity.class.getSimpleName();
 
-    private Button dialButton;
-
     private TextView responseMessageTextView;
 
     private boolean isStarted = false;
@@ -54,23 +49,14 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        dialButton = (Button) findViewById(R.id.btn_dial);
         responseMessageTextView = (TextView) findViewById(R.id.response_text);
 
-        dialButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (ActivityCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                    dial();
-                } else {
-                    ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.CALL_PHONE}, PERMISSION_CALL);
-                }
-            }
-        });
-
-        if (isAccessibilitySettingsOn(this)) {
+        if (USSDManager.isAccessibilitySettingsOn(this)) {
             if (!isStarted) {
                 isStarted = true;
+                if (ActivityCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.CALL_PHONE}, PERMISSION_CALL);
+                }
                 startService(new Intent(this, FAccesibilityService.class));
             }
         } else {
@@ -80,35 +66,30 @@ public class HomeActivity extends AppCompatActivity {
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, PERMISSION_SMS);
         }
-    }
 
-    private void dial() {
-        final USSDManager ussdManager = new USSDManager();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+        String text = FFileWriterAndReader.getStringFromFile(this);
+        if(!TextUtils.isEmpty(text)) {
+            responseMessageTextView.setText(text);
+        } else {
+            responseMessageTextView.setText("Nothing");
+        }
 
-            ussdManager.call(this, "*989#", new USSDManager.USSDCallback() {
-                @Override
-                public void response(String response) {
-                    Log.d(TAG, "response is : " + response);
-                    responseMessageTextView.setText(response);
-                    ussdManager.reply("1", "Send", new USSDManager.USSDCallback() {
-                        @Override
-                        public void response(String response) {
-                            responseMessageTextView.setText(responseMessageTextView.getText() + response);
-                        }
-                    });
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String text = FFileWriterAndReader.getStringFromFile(HomeActivity.this);
+                if(!TextUtils.isEmpty(text)) {
+                    responseMessageTextView.setText(text);
+                } else {
+                    responseMessageTextView.setText("Nothing");
                 }
-            });
-        }
+            }
+        };
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("MESSAGE_UPDATE");
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_CALL && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            dial();
-        }
-    }
     private void openAccesibilitySetting() {
         Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
         startActivity(intent);
@@ -117,9 +98,12 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (isAccessibilitySettingsOn(this)) {
+        if (USSDManager.isAccessibilitySettingsOn(this)) {
             if (!isStarted) {
                 isStarted = true;
+                if (ActivityCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(HomeActivity.this, new String[]{Manifest.permission.CALL_PHONE}, PERMISSION_CALL);
+                }
                 startService(new Intent(this, FAccesibilityService.class));
             }
         }
@@ -128,44 +112,5 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-    }
-
-
-    /**
-     * Check for accesibility is enabled for this app.
-     *
-     * @param mContext Context to access android components.
-     * @return True if has access.
-     */
-    private boolean isAccessibilitySettingsOn(Context mContext) {
-        int accessibilityEnabled = 0;
-        final String service = getPackageName() + "/" + FAccesibilityService.class.getCanonicalName();
-        try {
-            accessibilityEnabled = Settings.Secure.getInt(
-                    mContext.getApplicationContext().getContentResolver(),
-                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
-        } catch (Settings.SettingNotFoundException e) {
-
-        }
-        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
-
-        if (accessibilityEnabled == 1) {
-            String settingValue = Settings.Secure.getString(
-                    mContext.getApplicationContext().getContentResolver(),
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (settingValue != null) {
-                mStringColonSplitter.setString(settingValue);
-                while (mStringColonSplitter.hasNext()) {
-                    String accessibilityService = mStringColonSplitter.next();
-
-                    if (accessibilityService.equalsIgnoreCase(service)) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-        }
-
-        return false;
     }
 }

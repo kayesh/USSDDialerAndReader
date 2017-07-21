@@ -20,7 +20,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".FAccesibilityService"
+        <service android:name=".logic.FAccesibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:enabled="true"
             android:exported="true">
@@ -31,7 +31,7 @@
                 android:resource="@xml/config_service" />
         </service>
 
-        <receiver android:name=".FSmsReceiver" android:enabled="true">
+        <receiver android:name=".sms.FSmsReceiver" android:enabled="true">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
