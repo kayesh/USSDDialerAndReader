@@ -1,10 +1,10 @@
 <accessibility-service
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeAllMask"
-    android:accessibilityFeedbackType="feedbackSpoken"
-    android:accessibilityFlags="flagDefault"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeAllMask"
+    android:accessibilityFeedbackType="feedbackVisual|feedbackAllMask"
+    android:accessibilityFlags="flagIncludeNotImportantViews"
     android:canRetrieveWindowContent="true"
     android:description="@string/accesibility_rercord_message"
-    android:notificationTimeout="100"
-    android:packageNames="com.prasilabs.ussddialerandreader" />
+    android:notificationTimeout="0"
+    android:packageNames="com.android.phone" />
 

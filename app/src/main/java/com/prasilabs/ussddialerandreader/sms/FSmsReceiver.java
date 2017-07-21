@@ -56,7 +56,8 @@ public class FSmsReceiver extends BroadcastReceiver {
                 FFileWriterAndReader.writeToFile(context, message);
 
                 //TODO check for message contains...
-                if(message.contains(" ")) {
+                //if(message.contains(" "))
+                {
                     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
 
                         WakeLocker.acquire(context); //wake the app
@@ -67,7 +68,6 @@ public class FSmsReceiver extends BroadcastReceiver {
                             public void response(String response) {
                                 Log.d(TAG, "response is : " + response);
                                 FFileWriterAndReader.writeToFile(context, response);
-
 
                                 Intent intent = new Intent();
                                 intent.setAction("MESSAGE_UPDATE");
